@@ -1,0 +1,75 @@
+name: Build m_media DLL
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            target_name: m_media_x64.dll
+          - target: i686-pc-windows-msvc
+            target_name: m_media_x86.dll
+          - target: aarch64-pc-windows-msvc
+            target_name: m_media_arm64.dll
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build project
+        run: cargo build --release --target=${{ matrix.target }}
+
+      - name: Rename DLL
+        run: |
+          Rename-Item -Path target/${{ matrix.target }}/release/m_media.dll -NewName ${{ matrix.target_name }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: m_media_${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/${{ matrix.target_name }}
+
+  collect-artifacts:
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+      - name: Download build artifacts (x64)
+        uses: actions/download-artifact@v4
+        with:
+          name: m_media_x86_64-pc-windows-msvc
+          path: ./artifacts/x64
+
+      - name: Download build artifacts (x86)
+        uses: actions/download-artifact@v4
+        with:
+          name: m_media_i686-pc-windows-msvc
+          path: ./artifacts/x86
+
+      - name: Download build artifacts (ARM64)
+        uses: actions/download-artifact@v4
+        with:
+          name: m_media_aarch64-pc-windows-msvc
+          path: ./artifacts/arm64
+
+      - name: Create combined artifact directory
+        run: mkdir -p combined_artifacts
+
+      - name: Move DLLs to combined artifact directory
+        run: |
+          Move-Item -Path ./artifacts/x64/m_media_x64.dll -Destination ./combined_artifacts/m_media_x64.dll
+          Move-Item -Path ./artifacts/x86/m_media_x86.dll -Destination ./combined_artifacts/m_media_x86.dll
+          Move-Item -Path ./artifacts/arm64/m_media_arm64.dll -Destination ./combined_artifacts/m_media_arm64.dll
+
+      - name: Upload combined artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: m_media
+          path: ./combined_artifacts
