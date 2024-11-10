@@ -1,4 +1,3 @@
-#[macro_use]
 mod mirc;
 
 use std::sync::Mutex;
