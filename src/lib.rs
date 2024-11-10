@@ -5,16 +5,8 @@ use windows::core::{PCWSTR, w};
 use windows::Win32::Foundation::{BOOL, HWND};
 use mirc::{LOADINFO, MircReturn, TimeoutReason};
 
-#[cfg(target_arch = "x86")]
-static M_BITS: &str = "32-bit";
-#[cfg(target_arch = "x86_64")]
-static M_BITS: &str = "64-bit";
-#[cfg(all(not(target_arch = "x86"), not(target_arch = "x86_64")))]
-static M_BITS: &str = "Unknown Arch";
-
 static M_VERSION: Mutex<u32> = Mutex::new(0);
 static M_MAX_BYTES: Mutex<u32> = Mutex::new(0);
-
 
 #[no_mangle]
 pub extern "stdcall" fn LoadDll(li: *mut LOADINFO) {
@@ -69,11 +61,12 @@ pub extern "stdcall" fn version(
   let name = env!("CARGO_PKG_NAME");
   let version = env!("CARGO_PKG_VERSION");
   let author = env!("CARGO_PKG_AUTHORS");
+  let arch = std::env::consts::ARCH;
   let m_version = *M_VERSION.lock().unwrap();
   let m_version_low = m_version & 0xFFFF;
   let m_version_high = m_version >> 16;
   
-  let input = format!("{} {} by {} on mIRC v{}.{} ({})\0", name, version, author, m_version_low, m_version_high, M_BITS);
+  let input = format!("{} {} by {} on mIRC v{}.{} ({})\0", name, version, author, m_version_low, m_version_high, arch);
   let wide_input: Vec<u16> = input.encode_utf16().collect();
   let message = PCWSTR(wide_input.as_ptr());
   unsafe {
