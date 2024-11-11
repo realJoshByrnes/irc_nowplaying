@@ -58,22 +58,6 @@ pub extern "stdcall" fn UnloadDll(m_timeout: TimeoutReason) -> i32 {
 }
 
 #[no_mangle]
-pub extern "stdcall" fn MyFunction(
-    _m_wnd: HWND,
-    _a_wnd: HWND,
-    data: PCWSTR,
-    _parms: PCWSTR,
-    _show: BOOL,
-    _nopause: BOOL,
-) -> MircReturn {
-    let message = w!("Hello, World!");
-    unsafe {
-        std::ptr::copy_nonoverlapping(message.as_ptr(), data.0 as *mut u16, message.len() + 1);
-    }
-    MircReturn::Result // Return the result to mIRC
-}
-
-#[no_mangle]
 pub extern "stdcall" fn version(
     _m_wnd: HWND,
     _a_wnd: HWND,
