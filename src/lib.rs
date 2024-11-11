@@ -1,15 +1,20 @@
 mod mirc;
 
 use mirc::{MircReturn, TimeoutReason, LOADINFO};
+use std::sync::atomic::{AtomicI32, AtomicPtr, Ordering};
 use std::sync::Mutex;
-use windows::core::PCWSTR;
+use windows::core::{w, PCWSTR};
 use windows::Win32::Foundation::{BOOL, HWND};
-use windows::Win32::UI::WindowsAndMessaging::GetClassNameW;
+use windows::Win32::System::Threading::GetCurrentThreadId;
+use windows::Win32::UI::WindowsAndMessaging::{GetClassNameW, GetWindowThreadProcessId};
 
 // Global variables
 static M_CLIENT: Mutex<String> = Mutex::new(String::new());
 static M_VERSION: Mutex<u32> = Mutex::new(0);
 static M_MAX_BYTES: Mutex<u32> = Mutex::new(0);
+static M_HWND: AtomicPtr<HWND> = AtomicPtr::new(std::ptr::null_mut());
+
+static M_WAITING_FOR_MEDIA_CHANGE: AtomicI32 = AtomicI32::new(0);
 
 #[no_mangle]
 pub extern "stdcall" fn LoadDll(li: *mut LOADINFO) {
@@ -42,7 +47,8 @@ pub extern "stdcall" fn LoadDll(li: *mut LOADINFO) {
             *client = "Unknown".to_string();
         }
 
-        // Store the client name (mIRC/AdiIRC) in a global variable
+        // Store the HWND in a global variable
+        M_HWND.store((*li).m_hwnd.0 as *mut HWND, Ordering::SeqCst);
     }
 }
 
@@ -85,6 +91,61 @@ pub extern "stdcall" fn version(
     let message = PCWSTR(wide_input.as_ptr());
     unsafe {
         std::ptr::copy_nonoverlapping(message.as_ptr(), data.0 as *mut u16, message.len() + 1);
+    }
+    MircReturn::Result // Return the result to mIRC
+}
+
+fn is_gui_thread() -> bool {
+    let hwnd = HWND(M_HWND.load(Ordering::SeqCst) as *mut _);
+    let thread_id = unsafe { GetWindowThreadProcessId(hwnd, None) };
+    let current_thread_id = unsafe { GetCurrentThreadId() };
+    thread_id == current_thread_id
+}
+
+#[no_mangle]
+pub extern "stdcall" fn wait_for_media(
+    _m_wnd: HWND,
+    _a_wnd: HWND,
+    data: PCWSTR,
+    _parms: PCWSTR,
+    _show: BOOL,
+    _nopause: BOOL,
+) -> MircReturn {
+    if is_gui_thread() {
+        // Synchronous calls using $dll or /dll block the GUI thread, return immediately.
+        let result =
+            w!("!echo -estgc info * The DLL routine you attempted touse is not allowed on the GUI thread, try using $ $+ dllcall() instead.");
+        unsafe {
+            std::ptr::copy_nonoverlapping(result.as_ptr(), data.0 as *mut u16, result.len() + 1);
+        }
+        return MircReturn::Command;
+    }
+
+    if M_WAITING_FOR_MEDIA_CHANGE.load(Ordering::SeqCst) != 0 {
+        // If we're already looping in another thread, return immediately.
+        return MircReturn::Continue;
+    }
+
+    M_WAITING_FOR_MEDIA_CHANGE.store(1, Ordering::SeqCst);
+    while M_WAITING_FOR_MEDIA_CHANGE.load(Ordering::SeqCst) != 0 {
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    MircReturn::Continue // Return the result to mIRC
+}
+
+#[no_mangle]
+pub extern "stdcall" fn halt(
+    _m_wnd: HWND,
+    _a_wnd: HWND,
+    data: PCWSTR,
+    _parms: PCWSTR,
+    _show: BOOL,
+    _nopause: BOOL,
+) -> MircReturn {
+    M_WAITING_FOR_MEDIA_CHANGE.store(0, Ordering::SeqCst);
+    let result = w!("!echo -estgc info * All $dllcall() calls have completed.");
+    unsafe {
+        std::ptr::copy_nonoverlapping(result.as_ptr(), data.0 as *mut u16, result.len() + 1);
     }
     MircReturn::Result // Return the result to mIRC
 }
