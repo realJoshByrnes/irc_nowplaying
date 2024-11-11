@@ -2,7 +2,7 @@ mod mirc;
 
 use mirc::{MircReturn, TimeoutReason, LOADINFO};
 use std::sync::Mutex;
-use windows::core::{w, PCWSTR};
+use windows::core::PCWSTR;
 use windows::Win32::Foundation::{BOOL, HWND};
 use windows::Win32::UI::WindowsAndMessaging::GetClassNameW;
 
