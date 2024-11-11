@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "m_media"
+name = "irc_nowplaying"
 version = "0.1.0"
 dependencies = [
  "windows",
