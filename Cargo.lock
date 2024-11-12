@@ -3,9 +3,16 @@
 version = 4
 
 [[package]]
+name = "debug_print"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8f215f9b7224f49fb73256115331f677d868b34d18b65dbe4db392e6021eea90"
+
+[[package]]
 name = "irc_nowplaying"
 version = "0.1.0"
 dependencies = [
+ "debug_print",
  "windows",
 ]
 
