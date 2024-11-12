@@ -47,8 +47,7 @@ pub static M_LOADINFO: Mutex<LOADINFO> = Mutex::new(LOADINFO {
     mBytes: 0,
 });
 
-#[no_mangle]
-pub extern "stdcall" fn LoadDll(li: *mut LOADINFO) {
+pub fn LoadDll(li: *mut LOADINFO) {
     deprintln!("Loading DLL");
     unsafe {
         deprintln!("Set mKeep = 1, mUnicode = 1");
@@ -60,8 +59,7 @@ pub extern "stdcall" fn LoadDll(li: *mut LOADINFO) {
     }
 }
 
-#[no_mangle]
-pub extern "stdcall" fn UnloadDll(reason: TimeoutReason) -> i32 {
+pub fn UnloadDll(reason: TimeoutReason) -> i32 {
     match reason {
         TimeoutReason::Unload => 0,
         TimeoutReason::Inactive => 1,

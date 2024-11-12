@@ -1,8 +1,11 @@
 {
+  "rust-analyzer.checkOnSave.enable": true,
+  "rust-analyzer.checkOnSave.command": "clippy",
+  "rust-analyzer.diagnostics.experimental.enable": true,
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer",
     "editor.formatOnSave": true,
-  }
+  },
 }
