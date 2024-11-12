@@ -10,7 +10,8 @@
         "${workspaceFolder}\\target\\i686-pc-windows-msvc\\debug\\irc_nowplaying.dll"
       ],
       "cwd": "${workspaceFolder}",
-      "preLaunchTask": "build (i686-pc-windows-msvc debug)"
+      "preLaunchTask": "build (i686-pc-windows-msvc debug)",
+      "internalConsoleOptions": "openOnSessionStart",
     }
   ]
 }
